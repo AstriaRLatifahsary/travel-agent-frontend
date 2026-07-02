@@ -6,16 +6,28 @@ const { data: packages } = await useFetch(
 
 <template>
   <div class="container mx-auto py-10 px-6">
-    <h1 class="text-4xl font-bold mb-10">
+    <h1
+      class="
+        text-4xl
+        font-bold
+        text-slate-900
+        mb-10
+      "
+    >
       Paket Traveling
     </h1>
 
     <div class="grid md:grid-cols-3 gap-8">
-      <PackageCard
+      <NuxtLink
         v-for="pkg in packages"
         :key="pkg.id"
-        :pkg="pkg"
-      />
+        :to="`/packages/${pkg.id}`"
+        class="block"
+      >
+        <PackageCard
+          :pkg="pkg"
+        />
+      </NuxtLink>
     </div>
   </div>
 </template>

@@ -1,4 +1,12 @@
 <script setup lang="ts">
+import {
+  MessageSquare,
+  Plus,
+  Pencil,
+  Trash2,
+} from 'lucide-vue-next'
+import Swal from 'sweetalert2'
+
 definePageMeta({
   middleware: ['auth'],
   layout: 'admin',
@@ -46,188 +54,611 @@ function openCreate() {
 function openEdit(review: any) {
   editingId.value = review.id
 
-  form.travelPackageId =
-    review.travelPackageId
+  form.travelPackageId = String(
+    review.travelPackageId ?? ''
+  )
 
   form.customerName =
-    review.customerName
+    review.customerName ?? ''
 
   form.customerPhoto =
-    review.customerPhoto
+    review.customerPhoto ?? ''
 
   form.comment =
-    review.comment
+    review.comment ?? ''
 
-  form.rating =
-    review.rating
+  form.rating = String(
+    review.rating ?? ''
+  )
 
   showForm.value = true
 }
 
 async function saveReview() {
+  if (!form.travelPackageId) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Pilih Paket',
+      text:
+        'Silakan pilih paket terlebih dahulu.',
+      confirmButtonColor: '#2563eb',
+    })
+    return
+  }
+
+  if (
+    !form.customerName ||
+    !form.comment ||
+    !form.rating
+  ) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Data Belum Lengkap',
+      text:
+        'Silakan lengkapi seluruh data review.',
+      confirmButtonColor: '#2563eb',
+    })
+    return
+  }
+
+  const rating = Number(form.rating)
+
+  if (rating < 1 || rating > 5) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Rating Tidak Valid',
+      text:
+        'Rating harus berada di antara 1 sampai 5.',
+      confirmButtonColor: '#2563eb',
+    })
+    return
+  }
+
   const payload = {
-    travelPackageId: Number(
+    travel_package_id: Number(
       form.travelPackageId
     ),
-    customerName: form.customerName,
-    customerPhoto: form.customerPhoto,
+    customer_name:
+      form.customerName,
+    customer_photo:
+      form.customerPhoto,
     comment: form.comment,
-    rating: Number(form.rating),
+    rating,
   }
 
-  if (editingId.value) {
-    await $fetch(
-      `http://localhost:3333/admin/reviews/${editingId.value}`,
-      {
-        method: 'PUT',
-        body: payload,
-      }
-    )
-  } else {
-    await $fetch(
-      'http://localhost:3333/admin/reviews',
-      {
-        method: 'POST',
-        body: payload,
-      }
-    )
-  }
+  try {
+    if (editingId.value) {
+      await $fetch(
+        `http://localhost:3333/admin/reviews/${editingId.value}`,
+        {
+          method: 'PUT',
+          body: payload,
+        }
+      )
+    } else {
+      await $fetch(
+        'http://localhost:3333/admin/reviews',
+        {
+          method: 'POST',
+          body: payload,
+        }
+      )
+    }
 
-  showForm.value = false
-  resetForm()
-  refresh()
+    showForm.value = false
+    resetForm()
+
+    await refresh()
+
+    await Swal.fire({
+      icon: 'success',
+      title: 'Berhasil',
+      text:
+        'Review berhasil disimpan.',
+      confirmButtonColor:
+        '#2563eb',
+    })
+  } catch (error) {
+    console.error(error)
+
+    await Swal.fire({
+      icon: 'error',
+      title: 'Gagal',
+      text:
+        'Gagal menyimpan review.',
+      confirmButtonColor:
+        '#2563eb',
+    })
+  }
 }
 
 async function deleteReview(id: number) {
-  if (!confirm('Yakin hapus review?'))
+  const result =
+    await Swal.fire({
+      title: 'Hapus Review?',
+      text:
+        'Data yang dihapus tidak dapat dikembalikan.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText:
+        'Hapus',
+      cancelButtonText:
+        'Batal',
+      confirmButtonColor:
+        '#ef4444',
+    })
+
+  if (!result.isConfirmed)
     return
 
-  await $fetch(
-    `http://localhost:3333/admin/reviews/${id}`,
-    {
-      method: 'DELETE',
-    }
-  )
+  try {
+    await $fetch(
+      `http://localhost:3333/admin/reviews/${id}`,
+      {
+        method: 'DELETE',
+      }
+    )
 
-  refresh()
+    await refresh()
+
+    await Swal.fire({
+      icon: 'success',
+      title: 'Berhasil',
+      text:
+        'Review berhasil dihapus.',
+      confirmButtonColor:
+        '#2563eb',
+    })
+  } catch (error) {
+    console.error(error)
+
+    await Swal.fire({
+      icon: 'error',
+      title: 'Gagal',
+      text:
+        'Gagal menghapus review.',
+      confirmButtonColor:
+        '#2563eb',
+    })
+  }
 }
 </script>
 
 <template>
-  <div class="p-10">
-    <div class="flex justify-between mb-8">
-      <h1 class="text-4xl font-bold">
-        Manage Review Customer
-      </h1>
+  <div class="p-10 bg-slate-50 min-h-screen">
+
+    <!-- Header -->
+    <div
+      class="
+        flex
+        justify-between
+        items-center
+        mb-8
+      "
+    >
+      <div>
+        <p
+          class="
+            text-blue-600
+            font-semibold
+            tracking-[4px]
+            uppercase
+            mb-2
+          "
+        >
+          Testimonial Management
+        </p>
+
+        <h1
+          class="
+            text-4xl
+            font-bold
+            text-slate-900
+          "
+        >
+          Manage Review Customer
+        </h1>
+
+        <p
+          class="
+            text-slate-500
+            mt-2
+          "
+        >
+          Kelola review dan testimonial customer.
+        </p>
+      </div>
 
       <button
         @click="openCreate"
-        class="bg-blue-500 text-white px-5 py-2 rounded"
+        class="
+          flex
+          items-center
+          gap-2
+          bg-blue-600
+          text-white
+          px-5
+          py-3
+          rounded-2xl
+          shadow-lg
+          hover:bg-blue-700
+          transition
+        "
       >
+        <Plus class="w-5 h-5" />
         Tambah Review
       </button>
     </div>
 
+    <!-- Statistik -->
     <div
-      v-if="showForm"
-      class="bg-white shadow rounded p-6 mb-8"
+      class="
+        bg-white
+        rounded-[28px]
+        p-6
+        shadow-sm
+        border
+        border-slate-100
+        mb-8
+      "
     >
-      <div class="space-y-4">
-        <select
-          v-model="form.travelPackageId"
-          class="border p-3 w-full rounded"
-        >
-          <option value="">
-            Pilih Paket
-          </option>
+      <div
+        class="
+          flex
+          justify-between
+          items-center
+        "
+      >
+        <div>
+          <p class="text-slate-500">
+            Total Review
+          </p>
 
-          <option
-            v-for="pkg in packages"
-            :key="pkg.id"
-            :value="pkg.id"
+          <h2
+            class="
+              text-4xl
+              font-bold
+              mt-2
+            "
           >
-            {{ pkg.title }}
-          </option>
-        </select>
+            {{ reviews?.length || 0 }}
+          </h2>
+        </div>
 
-        <input
-          v-model="form.customerName"
-          placeholder="Customer Name"
-          class="border p-3 w-full rounded"
-        />
-
-        <input
-          v-model="form.customerPhoto"
-          placeholder="Photo URL"
-          class="border p-3 w-full rounded"
-        />
-
-        <textarea
-          v-model="form.comment"
-          placeholder="Comment"
-          class="border p-3 w-full rounded"
-        />
-
-        <input
-          v-model="form.rating"
-          placeholder="Rating"
-          class="border p-3 w-full rounded"
-        />
-
-        <button
-          @click="saveReview"
-          class="bg-green-500 text-white px-5 py-2 rounded"
+        <div
+          class="
+            w-16
+            h-16
+            rounded-2xl
+            bg-blue-100
+            flex
+            items-center
+            justify-center
+          "
         >
-          Simpan
-        </button>
+          <MessageSquare
+            class="
+              w-8
+              h-8
+              text-blue-600
+            "
+          />
+        </div>
       </div>
     </div>
 
-    <table class="w-full border bg-white">
-      <thead class="bg-gray-100">
-        <tr>
-          <th class="p-4">Customer</th>
-          <th class="p-4">Paket</th>
-          <th class="p-4">Rating</th>
-          <th class="p-4">Action</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr
-          v-for="review in reviews"
-          :key="review.id"
-          class="border-t"
+    <!-- Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showForm"
+        class="
+          fixed
+          inset-0
+          z-50
+          bg-black/40
+          backdrop-blur-sm
+          flex
+          items-center
+          justify-center
+          p-6
+        "
+      >
+        <div
+          class="
+            bg-white
+            w-full
+            max-w-lg
+            rounded-[28px]
+            p-6
+            shadow-2xl
+          "
         >
-          <td class="p-4">
-            {{ review.customerName }}
-          </td>
-
-          <td class="p-4">
-            {{ review.travelPackage.title }}
-          </td>
-
-          <td class="p-4">
-            ⭐ {{ review.rating }}
-          </td>
-
-          <td class="p-4">
-            <button
-              @click="openEdit(review)"
-              class="text-blue-500 mr-4"
+          <div
+            class="
+              flex
+              justify-between
+              items-center
+              mb-6
+            "
+          >
+            <h2
+              class="
+                text-2xl
+                font-bold
+              "
             >
-              Edit
-            </button>
+              {{
+                editingId
+                  ? 'Edit Review'
+                  : 'Tambah Review'
+              }}
+            </h2>
 
             <button
-              @click="deleteReview(review.id)"
-              class="text-red-500"
+              @click="
+                showForm = false;
+                resetForm()
+              "
+              class="
+                text-3xl
+                text-slate-400
+              "
             >
-              Delete
+              ×
             </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+          </div>
+
+          <div class="space-y-4">
+
+            <select
+              v-model="form.travelPackageId"
+              class="
+                border
+                p-3
+                w-full
+                rounded-xl
+              "
+            >
+              <option value="">
+                Pilih Paket
+              </option>
+
+              <option
+                v-for="pkg in packages"
+                :key="pkg.id"
+                :value="pkg.id"
+              >
+                {{ pkg.title }}
+              </option>
+            </select>
+
+            <input
+              v-model="form.customerName"
+              placeholder="Customer Name"
+              class="
+                border
+                p-3
+                w-full
+                rounded-xl
+              "
+            />
+
+            <input
+              v-model="form.customerPhoto"
+              placeholder="Photo URL"
+              class="
+                border
+                p-3
+                w-full
+                rounded-xl
+              "
+            />
+
+            <textarea
+              v-model="form.comment"
+              rows="3"
+              placeholder="Comment"
+              class="
+                border
+                p-3
+                w-full
+                rounded-xl
+              "
+            />
+
+            <input
+              v-model="form.rating"
+              type="number"
+              min="1"
+              max="5"
+              placeholder="Rating (1-5)"
+              class="
+                border
+                p-3
+                w-full
+                rounded-xl
+              "
+            />
+
+            <div
+              class="
+                flex
+                justify-end
+                gap-3
+                pt-2
+              "
+            >
+              <button
+                @click="
+                  showForm = false;
+                  resetForm()
+                "
+                class="
+                  px-5
+                  py-3
+                  rounded-2xl
+                  bg-slate-200
+                "
+              >
+                Batal
+              </button>
+
+              <button
+                @click="saveReview"
+                class="
+                  px-5
+                  py-3
+                  rounded-2xl
+                  bg-blue-600
+                  text-white
+                "
+              >
+                Simpan Review
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Table -->
+    <div
+      class="
+        bg-white
+        rounded-[28px]
+        overflow-hidden
+        shadow-sm
+        border
+        border-slate-100
+      "
+    >
+      <table class="w-full">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="p-5 text-left">
+              Customer
+            </th>
+
+            <th class="p-5 text-left">
+              Paket
+            </th>
+
+            <th class="p-5 text-left">
+              Rating
+            </th>
+
+            <th class="p-5 text-left">
+              Action
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr
+            v-for="review in reviews"
+            :key="review.id"
+            class="
+              border-t
+              hover:bg-slate-50
+            "
+          >
+            <td class="p-5">
+              <div
+                class="
+                  flex
+                  items-center
+                  gap-3
+                "
+              >
+                <img
+                  :src="
+                    review.customerPhoto?.trim()
+                      ? review.customerPhoto
+                      : 'https://i.pravatar.cc/100'
+                  "
+                  class="
+                    w-10
+                    h-10
+                    rounded-full
+                    object-cover
+                  "
+                />
+
+                {{ review.customerName || 'Anonymous' }}
+              </div>
+            </td>
+
+            <td class="p-5">
+              <span
+                v-if="review.travelPackage"
+                class="text-slate-700"
+              >
+                {{ review.travelPackage.title }}
+              </span>
+
+              <span
+                v-else
+                class="text-red-500"
+              >
+                Paket tidak ditemukan
+              </span>
+            </td>
+
+            <td class="p-5">
+              ⭐ {{ review.rating }}/5
+            </td>
+
+            <td class="p-5">
+              <div class="flex gap-2">
+                <button
+                  @click="
+                    openEdit(review)
+                  "
+                  class="
+                    flex
+                    items-center
+                    gap-2
+                    bg-blue-50
+                    text-blue-600
+                    px-4
+                    py-2
+                    rounded-xl
+                  "
+                >
+                  <Pencil
+                    class="w-4 h-4"
+                  />
+                  Edit
+                </button>
+
+                <button
+                  @click="
+                    deleteReview(
+                      review.id
+                    )
+                  "
+                  class="
+                    flex
+                    items-center
+                    gap-2
+                    bg-red-50
+                    text-red-600
+                    px-4
+                    py-2
+                    rounded-xl
+                  "
+                >
+                  <Trash2
+                    class="w-4 h-4"
+                  />
+                  Delete
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
   </div>
 </template>

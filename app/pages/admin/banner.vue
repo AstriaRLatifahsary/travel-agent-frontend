@@ -1,8 +1,21 @@
 <script setup lang="ts">
+import {
+  Images,
+  Plus,
+  Pencil,
+  Trash2,
+} from 'lucide-vue-next'
+
+import Swal from 'sweetalert2'
+
 definePageMeta({
   middleware: ['auth'],
   layout: 'admin',
 })
+
+const { data: packages } = await useFetch(
+  'http://localhost:3333/admin/travel-packages'
+)
 
 const {
   data: banners,
@@ -19,6 +32,7 @@ const form = reactive({
   subtitle: '',
   image: '',
   description: '',
+  travelPackageId: '',
 })
 
 function resetForm() {
@@ -26,6 +40,7 @@ function resetForm() {
   form.subtitle = ''
   form.image = ''
   form.description = ''
+  form.travelPackageId = ''
 
   editingId.value = null
 }
@@ -42,20 +57,37 @@ function openEdit(banner: any) {
   form.subtitle = banner.subtitle
   form.image = banner.image
   form.description = banner.description
+  form.travelPackageId =
+    banner.travelPackageId ?? ''
 
   showForm.value = true
 }
 
 async function saveBanner() {
+  if (!form.travelPackageId) {
+  await Swal.fire({
+    icon: 'warning',
+    title: 'Pilih Paket',
+    text: 'Silakan pilih paket tujuan terlebih dahulu.',
+    confirmButtonColor: '#2563eb',
+  })
+
+  return
+} 
+
   const payload = {
     title: form.title,
     subtitle: form.subtitle,
     image: form.image,
     description: form.description,
+    travel_package_id: Number(
+      form.travelPackageId
+    ),
   }
 
   try {
     if (editingId.value) {
+      console.log(payload)
       await $fetch(
         `http://localhost:3333/admin/banners/${editingId.value}`,
         {
@@ -83,11 +115,20 @@ async function saveBanner() {
 }
 
 async function deleteBanner(id: number) {
-  const confirmDelete = confirm(
-    'Yakin ingin menghapus banner ini?'
-  )
+  const result =
+    await Swal.fire({
+      title: 'Hapus Banner?',
+      text:
+        'Data yang dihapus tidak dapat dikembalikan.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Hapus',
+      cancelButtonText: 'Batal',
+      confirmButtonColor: '#ef4444',
+    })
 
-  if (!confirmDelete) return
+  if (!result.isConfirmed)
+    return
 
   try {
     await $fetch(
@@ -98,132 +139,461 @@ async function deleteBanner(id: number) {
     )
 
     refresh()
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Berhasil',
+      text: 'Banner berhasil dihapus.',
+      confirmButtonColor: '#2563eb',
+    })
   } catch (error) {
     console.error(error)
-    alert('Gagal menghapus data')
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Gagal',
+      text: 'Gagal menghapus banner.',
+    })
   }
 }
 </script>
 
 <template>
-  <div class="p-10">
+  <div class="p-10 bg-slate-50 min-h-screen">
+    <!-- Header -->
+    <div
+      class="
+        flex
+        justify-between
+        items-center
+        mb-8
+      "
+    >
+      <div>
+        <p
+          class="
+            text-blue-600
+            font-semibold
+            tracking-[4px]
+            uppercase
+            mb-2
+          "
+        >
+          Content Management
+        </p>
 
-    <div class="flex justify-between mb-8">
-      <h1 class="text-4xl font-bold">
-        Manage Banner
-      </h1>
+        <h1
+          class="
+            text-4xl
+            font-bold
+            text-slate-900
+          "
+        >
+          Manage Banner
+        </h1>
+
+        <p
+          class="
+            text-slate-500
+            mt-2
+          "
+        >
+          Kelola banner yang ditampilkan pada halaman customer.
+        </p>
+      </div>
 
       <button
         @click="openCreate"
-        class="bg-blue-500 text-white px-5 py-2 rounded"
+        class="
+          flex
+          items-center
+          gap-2
+          bg-blue-600
+          text-white
+          px-5
+          py-3
+          rounded-2xl
+          shadow-lg
+          hover:bg-blue-700
+          transition
+        "
       >
+        <Plus class="w-5 h-5" />
         Tambah Banner
       </button>
     </div>
 
-    <!-- FORM -->
-
+    <!-- Statistik -->
     <div
-      v-if="showForm"
-      class="bg-white p-6 rounded shadow mb-8"
+      class="
+        bg-white
+        rounded-[28px]
+        p-6
+        shadow-sm
+        border
+        border-slate-100
+        mb-8
+      "
     >
-      <h2 class="text-2xl font-bold mb-5">
-        {{ editingId ? 'Edit Banner' : 'Tambah Banner' }}
-      </h2>
+      <div
+        class="
+          flex
+          justify-between
+          items-center
+        "
+      >
+        <div>
+          <p class="text-slate-500">
+            Total Banner
+          </p>
 
-      <div class="space-y-4">
-
-        <input
-          v-model="form.title"
-          placeholder="Title"
-          class="border p-3 w-full rounded"
-        />
-
-        <input
-          v-model="form.subtitle"
-          placeholder="Subtitle"
-          class="border p-3 w-full rounded"
-        />
-
-        <input
-          v-model="form.image"
-          placeholder="Image URL"
-          class="border p-3 w-full rounded"
-        />
-
-        <textarea
-          v-model="form.description"
-          placeholder="Description"
-          class="border p-3 w-full rounded"
-        />
-
-        <div class="space-x-3">
-
-          <button
-            @click="saveBanner"
-            class="bg-green-500 text-white px-5 py-2 rounded"
+          <h2
+            class="
+              text-4xl
+              font-bold
+              mt-2
+            "
           >
-            Simpan
-          </button>
+            {{ banners?.length || 0 }}
+          </h2>
+        </div>
 
-          <button
-            @click="showForm = false"
-            class="bg-gray-500 text-white px-5 py-2 rounded"
-          >
-            Batal
-          </button>
-
+        <div
+          class="
+            w-16
+            h-16
+            rounded-2xl
+            bg-blue-100
+            flex
+            items-center
+            justify-center
+          "
+        >
+          <Images
+            class="
+              w-8
+              h-8
+              text-blue-600
+            "
+          />
         </div>
       </div>
     </div>
 
-    <!-- TABLE -->
-
-    <table class="w-full border bg-white">
-
-      <thead class="bg-gray-100">
-        <tr>
-          <th class="p-4">Title</th>
-          <th class="p-4">Subtitle</th>
-          <th class="p-4">Action</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr
-          v-for="banner in banners"
-          :key="banner.id"
-          class="border-t"
+    <!-- Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showForm"
+        class="
+          fixed
+          inset-0
+          z-50
+          flex
+          items-center
+          justify-center
+          bg-black/40
+          backdrop-blur-sm
+          p-6
+        "
+      >
+        <div
+          class="
+            bg-white
+            w-full
+            max-w-md
+            rounded-[28px]
+            p-5
+            shadow-2xl
+          "
         >
-          <td class="p-4">
-            {{ banner.title }}
-          </td>
-
-          <td class="p-4">
-            {{ banner.subtitle }}
-          </td>
-
-          <td class="p-4">
+          <div
+            class="
+              flex
+              justify-between
+              items-center
+              mb-6
+            "
+          >
+            <h2
+              class="
+                text-2xl
+                font-bold
+              "
+            >
+              {{
+                editingId
+                  ? 'Edit Banner'
+                  : 'Tambah Banner'
+              }}
+            </h2>
 
             <button
-              @click="openEdit(banner)"
-              class="text-blue-500 mr-4"
+              @click="
+                showForm = false;
+                resetForm()
+              "
+              class="
+                text-3xl
+                text-slate-400
+                hover:text-slate-700
+              "
             >
-              Edit
+              ×
             </button>
+          </div>
 
-            <button
-              @click="deleteBanner(banner.id)"
-              class="text-red-500"
+          <div class="space-y-4">
+            <input
+              v-model="form.title"
+              placeholder="Title"
+              class="
+                w-full
+                border
+                border-slate-200
+                rounded-xl
+                p-3
+              "
+            />
+
+            <input
+              v-model="form.subtitle"
+              placeholder="Subtitle"
+              class="
+                w-full
+                border
+                border-slate-200
+                rounded-xl
+                p-3
+              "
+            />
+
+            <input
+              v-model="form.image"
+              placeholder="Masukkan URL gambar banner"
+              class="
+                w-full
+                border
+                border-slate-200
+                rounded-xl
+                p-3
+              "
+            />
+
+            <select
+              v-model="form.travelPackageId"
+              class="
+                w-full
+                border
+                border-slate-200
+                rounded-xl
+                p-3
+              "
             >
-              Delete
-            </button>
+              <option value="">
+                Pilih Paket Tujuan
+              </option>
 
-          </td>
-        </tr>
-      </tbody>
+              <option
+                v-for="pkg in packages"
+                :key="pkg.id"
+                :value="pkg.id"
+              >
+                {{ pkg.title }}
+              </option>
+            </select>
 
-    </table>
+            <textarea
+              v-model="form.description"
+              rows="3"
+              placeholder="Description"
+              class="
+                w-full
+                border
+                border-slate-200
+                rounded-xl
+                p-3
+              "
+            />
 
+            <div
+              class="
+                flex
+                justify-end
+                gap-3
+                pt-2
+              "
+            >
+              <button
+                @click="
+                  showForm = false;
+                  resetForm()
+                "
+                class="
+                  px-5
+                  py-3
+                  rounded-2xl
+                  bg-slate-200
+                "
+              >
+                Batal
+              </button>
+
+              <button
+                @click="saveBanner"
+                class="
+                  px-5
+                  py-3
+                  rounded-2xl
+                  bg-blue-600
+                  text-white
+                  hover:bg-blue-700
+                "
+              >
+                Simpan Banner
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Table -->
+    <div
+      class="
+        bg-white
+        rounded-[28px]
+        overflow-hidden
+        shadow-sm
+        border
+        border-slate-100
+      "
+    >
+      <table class="w-full">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="p-5 text-left">
+              Title
+            </th>
+
+            <th class="p-5 text-left">
+              Paket Tujuan
+            </th>
+
+            <th class="p-5 text-left">
+              Image
+            </th>
+
+            <th class="p-5 text-left">
+              Action
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr
+            v-for="banner in banners"
+            :key="banner.id"
+            class="
+              border-t
+              hover:bg-slate-50
+              transition
+            "
+          >
+            <td class="p-5">
+              {{ banner.title }}
+            </td>
+
+            <td class="p-5">
+              {{
+                packages?.find(
+                  p =>
+                    p.id ===
+                    banner.travelPackageId
+                )?.title || '-'
+              }}
+            </td>
+
+            <td class="p-5">
+              <img
+                :src="
+                  banner.image ||
+                  'https://placehold.co/120x70'
+                "
+                class="
+                  w-28
+                  h-16
+                  object-cover
+                  rounded-xl
+                "
+              />
+            </td>
+
+            <td class="p-5">
+              <div class="flex gap-2">
+                <button
+                  @click="openEdit(banner)"
+                  class="
+                    flex
+                    items-center
+                    gap-2
+                    bg-blue-50
+                    text-blue-600
+                    px-4
+                    py-2
+                    rounded-xl
+                    hover:bg-blue-100
+                    transition
+                  "
+                >
+                  <Pencil class="w-4 h-4" />
+                  Edit
+                </button>
+
+                <button
+                  @click="
+                    deleteBanner(
+                      banner.id
+                    )
+                  "
+                  class="
+                    flex
+                    items-center
+                    gap-2
+                    bg-red-50
+                    text-red-600
+                    px-4
+                    py-2
+                    rounded-xl
+                    hover:bg-red-100
+                    transition
+                  "
+                >
+                  <Trash2 class="w-4 h-4" />
+                  Delete
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <tr
+            v-if="
+              !banners ||
+              banners.length === 0
+            "
+          >
+            <td
+              colspan="4"
+              class="
+                text-center
+                py-10
+                text-slate-500
+              "
+            >
+              Belum ada data banner.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
