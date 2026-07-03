@@ -5,9 +5,13 @@ import {
   ArrowRight,
 } from 'lucide-vue-next'
 
-defineProps({
-  pkg: Object,
-})
+import type {
+  TravelPackage,
+} from '~/types/travel-package'
+
+defineProps<{
+  pkg: TravelPackage
+}>()
 </script>
 
 <template>
@@ -29,6 +33,7 @@ defineProps({
     <div class="relative">
       <img
         :src="pkg.image"
+        loading="lazy"
         class="
           w-full
           h-64

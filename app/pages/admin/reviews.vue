@@ -5,7 +5,16 @@ import {
   Pencil,
   Trash2,
 } from 'lucide-vue-next'
+
 import Swal from 'sweetalert2'
+
+import type {
+  Review,
+} from '~/types/review'
+
+import type {
+  TravelPackage,
+} from '~/types/travel-package'
 
 definePageMeta({
   middleware: ['auth'],
@@ -15,33 +24,43 @@ definePageMeta({
 const {
   data: reviews,
   refresh,
-} = await useFetch(
+} = await useFetch<
+  Review[]
+>(
   'http://localhost:3333/admin/reviews'
 )
 
 const {
   data: packages,
-} = await useFetch(
+} = await useFetch<
+  TravelPackage[]
+>(
   'http://localhost:3333/admin/travel-packages'
 )
 
 const showForm = ref(false)
-const editingId = ref<number | null>(null)
+
+const editingId = ref<
+  number | null
+>(null)
 
 const form = reactive({
-  travelPackageId: '',
+  travelPackageId:
+    null as number | null,
+
   customerName: '',
   customerPhoto: '',
   comment: '',
-  rating: '',
+  rating:
+    null as number | null,
 })
 
 function resetForm() {
-  form.travelPackageId = ''
+  form.travelPackageId = null
   form.customerName = ''
   form.customerPhoto = ''
   form.comment = ''
-  form.rating = ''
+  form.rating = null
 
   editingId.value = null
 }
@@ -51,12 +70,13 @@ function openCreate() {
   showForm.value = true
 }
 
-function openEdit(review: any) {
+function openEdit(
+  review: Review
+) {
   editingId.value = review.id
 
-  form.travelPackageId = String(
-    review.travelPackageId ?? ''
-  )
+  form.travelPackageId =
+    review.travelPackageId
 
   form.customerName =
     review.customerName ?? ''
@@ -67,9 +87,8 @@ function openEdit(review: any) {
   form.comment =
     review.comment ?? ''
 
-  form.rating = String(
-    review.rating ?? ''
-  )
+  form.rating =
+    review.rating ?? null
 
   showForm.value = true
 }
@@ -81,8 +100,10 @@ async function saveReview() {
       title: 'Pilih Paket',
       text:
         'Silakan pilih paket terlebih dahulu.',
-      confirmButtonColor: '#2563eb',
+      confirmButtonColor:
+        '#2563eb',
     })
+
     return
   }
 
@@ -93,37 +114,47 @@ async function saveReview() {
   ) {
     await Swal.fire({
       icon: 'warning',
-      title: 'Data Belum Lengkap',
+      title:
+        'Data Belum Lengkap',
       text:
         'Silakan lengkapi seluruh data review.',
-      confirmButtonColor: '#2563eb',
+      confirmButtonColor:
+        '#2563eb',
     })
+
     return
   }
 
-  const rating = Number(form.rating)
-
-  if (rating < 1 || rating > 5) {
+  if (
+    form.rating < 1 ||
+    form.rating > 5
+  ) {
     await Swal.fire({
       icon: 'warning',
-      title: 'Rating Tidak Valid',
+      title:
+        'Rating Tidak Valid',
       text:
         'Rating harus berada di antara 1 sampai 5.',
-      confirmButtonColor: '#2563eb',
+      confirmButtonColor:
+        '#2563eb',
     })
+
     return
   }
 
   const payload = {
-    travel_package_id: Number(
-      form.travelPackageId
-    ),
+    travel_package_id:
+      form.travelPackageId,
+
     customer_name:
       form.customerName,
+
     customer_photo:
       form.customerPhoto,
+
     comment: form.comment,
-    rating,
+
+    rating: form.rating,
   }
 
   try {
@@ -146,6 +177,7 @@ async function saveReview() {
     }
 
     showForm.value = false
+
     resetForm()
 
     await refresh()
@@ -172,7 +204,9 @@ async function saveReview() {
   }
 }
 
-async function deleteReview(id: number) {
+async function deleteReview(
+  id: number
+) {
   const result =
     await Swal.fire({
       title: 'Hapus Review?',

@@ -1,5 +1,11 @@
 <script setup lang="ts">
-const { data: reviews } = await useFetch(
+import type {
+  Review,
+} from '~/types/review'
+
+const {
+  data: reviews,
+} = await useFetch<Review[]>(
   'http://localhost:3333/admin/reviews'
 )
 </script>
@@ -151,7 +157,7 @@ const { data: reviews } = await useFetch(
               >
                 {{
                   review.customerName ||
-                  review.customer_name
+                  review.customerName
                 }}
               </h3>
 

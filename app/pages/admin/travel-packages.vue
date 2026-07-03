@@ -5,7 +5,12 @@ import {
   Pencil,
   Trash2,
 } from 'lucide-vue-next'
+
 import Swal from 'sweetalert2'
+
+import type {
+  TravelPackage,
+} from '~/types/travel-package'
 
 definePageMeta({
   middleware: ['auth'],
@@ -15,12 +20,17 @@ definePageMeta({
 const {
   data: packages,
   refresh,
-} = await useFetch(
+} = await useFetch<
+  TravelPackage[]
+>(
   'http://localhost:3333/admin/travel-packages'
 )
 
 const showForm = ref(false)
-const editingId = ref<number | null>(null)
+
+const editingId = ref<
+  number | null
+>(null)
 
 const form = reactive({
   title: '',
@@ -31,7 +41,6 @@ const form = reactive({
   quota: '',
   facilities: '',
   image: '',
-  isActive: true,
 })
 
 function resetForm() {
@@ -43,7 +52,6 @@ function resetForm() {
   form.quota = ''
   form.facilities = ''
   form.image = ''
-  form.isActive = true
 
   editingId.value = null
 }
@@ -53,33 +61,79 @@ function openCreate() {
   showForm.value = true
 }
 
-function openEdit(pkg: any) {
+function openEdit(
+  pkg: TravelPackage
+) {
   editingId.value = pkg.id
 
   form.title = pkg.title
-  form.destination = pkg.destination
-  form.description = pkg.description
-  form.price = pkg.price
-  form.duration = pkg.duration
-  form.quota = pkg.quota
-  form.facilities = pkg.facilities
-  form.image = pkg.image
-  form.isActive = !!pkg.isActive
+  form.destination =
+    pkg.destination
+
+  form.description =
+    pkg.description
+
+  form.price = String(
+    pkg.price
+  )
+
+  form.duration =
+    pkg.duration ?? ''
+
+  form.quota = String(
+    pkg.quota ?? ''
+  )
+
+  form.facilities =
+    pkg.facilities ?? ''
+
+  form.image =
+    pkg.image ?? ''
 
   showForm.value = true
 }
 
 async function savePackage() {
+  if (
+    !form.title ||
+    !form.destination ||
+    !form.description ||
+    !form.price ||
+    !form.duration ||
+    !form.quota ||
+    !form.facilities ||
+    !form.image
+  ) {
+    await Swal.fire({
+      icon: 'warning',
+      title:
+        'Data Belum Lengkap',
+      text:
+        'Silakan lengkapi seluruh data paket.',
+      confirmButtonColor:
+        '#2563eb',
+    })
+
+    return
+  }
+
   const payload = {
     title: form.title,
-    destination: form.destination,
-    description: form.description,
-    price: Number(form.price),
-    duration: form.duration,
-    quota: Number(form.quota),
-    facilities: form.facilities,
+    destination:
+      form.destination,
+    description:
+      form.description,
+    price: Number(
+      form.price
+    ),
+    duration:
+      form.duration,
+    quota: Number(
+      form.quota
+    ),
+    facilities:
+      form.facilities,
     image: form.image,
-    isActive: form.isActive,
   }
 
   try {
@@ -102,25 +156,36 @@ async function savePackage() {
     }
 
     showForm.value = false
-    resetForm()
-    refresh()
 
-    Swal.fire({
+    resetForm()
+
+    await refresh()
+
+    await Swal.fire({
       icon: 'success',
       title: 'Berhasil',
-      text: 'Data paket berhasil disimpan.',
-      confirmButtonColor: '#2563eb',
+      text:
+        'Data paket berhasil disimpan.',
+      confirmButtonColor:
+        '#2563eb',
     })
   } catch (error) {
-    Swal.fire({
+    console.error(error)
+
+    await Swal.fire({
       icon: 'error',
       title: 'Gagal',
-      text: 'Gagal menyimpan data.',
+      text:
+        'Gagal menyimpan data.',
+      confirmButtonColor:
+        '#2563eb',
     })
   }
 }
 
-async function deletePackage(id: number) {
+async function deletePackage(
+  id: number
+) {
   const result =
     await Swal.fire({
       title: 'Hapus Paket?',
@@ -128,29 +193,48 @@ async function deletePackage(id: number) {
         'Data yang dihapus tidak dapat dikembalikan.',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Hapus',
-      cancelButtonText: 'Batal',
-      confirmButtonColor: '#ef4444',
+      confirmButtonText:
+        'Hapus',
+      cancelButtonText:
+        'Batal',
+      confirmButtonColor:
+        '#ef4444',
     })
 
-  if (!result.isConfirmed)
+  if (!result.isConfirmed) {
     return
+  }
 
-  await $fetch(
-    `http://localhost:3333/admin/travel-packages/${id}`,
-    {
-      method: 'DELETE',
-    }
-  )
+  try {
+    await $fetch(
+      `http://localhost:3333/admin/travel-packages/${id}`,
+      {
+        method: 'DELETE',
+      }
+    )
 
-  refresh()
+    await refresh()
 
-  Swal.fire({
-    icon: 'success',
-    title: 'Berhasil',
-    text: 'Paket berhasil dihapus.',
-    confirmButtonColor: '#2563eb',
-  })
+    await Swal.fire({
+      icon: 'success',
+      title: 'Berhasil',
+      text:
+        'Paket berhasil dihapus.',
+      confirmButtonColor:
+        '#2563eb',
+    })
+  } catch (error) {
+    console.error(error)
+
+    await Swal.fire({
+      icon: 'error',
+      title: 'Gagal',
+      text:
+        'Gagal menghapus paket.',
+      confirmButtonColor:
+        '#2563eb',
+    })
+  }
 }
 </script>
 
@@ -390,20 +474,6 @@ async function deletePackage(id: number) {
               class="border p-3 w-full rounded-xl"
             />
 
-            <label
-              class="
-                flex
-                items-center
-                gap-3
-              "
-            >
-              <input
-                type="checkbox"
-                v-model="form.isActive"
-              />
-
-              <span>Active</span>
-            </label>
 
             <div
               class="

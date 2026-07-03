@@ -5,25 +5,46 @@ import {
   MessageSquare,
 } from 'lucide-vue-next'
 
+import type {
+  Banner,
+} from '~/types/banner'
+
+import type {
+  TravelPackage,
+} from '~/types/travel-package'
+
+import type {
+  Review,
+} from '~/types/review'
+
 definePageMeta({
   middleware: ['auth'],
   layout: 'admin',
 })
 
-const { data: banners } =
-  await useFetch(
-    'http://localhost:3333/admin/banners'
-  )
+const {
+  data: banners,
+} = await useFetch<
+  Banner[]
+>(
+  'http://localhost:3333/admin/banners'
+)
 
-const { data: packages } =
-  await useFetch(
-    'http://localhost:3333/admin/travel-packages'
-  )
+const {
+  data: packages,
+} = await useFetch<
+  TravelPackage[]
+>(
+  'http://localhost:3333/admin/travel-packages'
+)
 
-const { data: reviews } =
-  await useFetch(
-    'http://localhost:3333/admin/reviews'
-  )
+const {
+  data: reviews,
+} = await useFetch<
+  Review[]
+>(
+  'http://localhost:3333/admin/reviews'
+)
 </script>
 
 <template>

@@ -1,5 +1,13 @@
 <script setup lang="ts">
-const { data: packages } = await useFetch(
+import type {
+  TravelPackage,
+} from '~/types/travel-package'
+
+const {
+  data: packages,
+} = await useFetch<
+  TravelPackage[]
+>(
   'http://localhost:3333/admin/travel-packages'
 )
 </script>

@@ -6,13 +6,42 @@ import {
   Users,
 } from 'lucide-vue-next'
 
-const { data: packages } = await useFetch(
-  'http://localhost:3333/admin/travel-packages'
-)
+import type {
+  TravelPackage,
+} from '~/types/travel-package'
 
-const { data: reviews } = await useFetch(
-  'http://localhost:3333/admin/reviews'
-)
+import type {
+  Review,
+} from '~/types/review'
+
+import type {
+  Banner,
+} from '~/types/banner'
+
+const [
+  bannersRes,
+  packagesRes,
+  reviewsRes,
+] = await Promise.all([
+  useFetch<Banner[]>(
+    'http://localhost:3333/admin/banners'
+  ),
+  useFetch<TravelPackage[]>(
+    'http://localhost:3333/admin/travel-packages'
+  ),
+  useFetch<Review[]>(
+    'http://localhost:3333/reviews/latest'
+  ),
+])
+
+const banners =
+  bannersRes.data
+
+const packages =
+  packagesRes.data
+
+const reviews =
+  reviewsRes.data
 
 const orderNow = () => {
   window.open(
@@ -27,7 +56,9 @@ const orderNow = () => {
 
     <!-- HERO -->
     <section>
-      <BannerCarousel />
+      <BannerCarousel 
+        :banners="banners || []"
+      />
     </section>
 
     <!-- ABOUT -->
@@ -647,6 +678,7 @@ const orderNow = () => {
     <section class="py-20 bg-slate-50">
       <div class="container mx-auto px-6">
 
+        <!-- Judul Section -->
         <div class="text-center mb-12">
           <span
             class="
@@ -685,132 +717,36 @@ const orderNow = () => {
           </p>
         </div>
 
-        <div
-          class="
-            grid
-            md:grid-cols-3
-            gap-6
-          "
-        >
-          <div
+        <!-- Card Review -->
+        <div class="grid md:grid-cols-3 gap-6">
+          <ReviewCard
             v-for="review in reviews?.slice(0, 3)"
             :key="review.id"
-            class="
-              bg-white
-              rounded-[24px]
-              p-7
-              border
-              border-slate-100
-              shadow-sm
-              hover:-translate-y-1
-              hover:shadow-xl
-              transition-all
-              duration-300
-            "
-          >
-            <!-- Quote -->
-            <div
-              class="
-                text-5xl
-                text-blue-100
-                font-serif
-                leading-none
-                mb-4
-              "
-            >
-              "
-            </div>
-
-            <!-- Komentar -->
-            <p
-              class="
-                text-slate-500
-                text-sm
-                leading-7
-                mb-7
-              "
-            >
-              {{ review.comment }}
-            </p>
-
-            <!-- User -->
-            <div
-              class="
-                flex
-                items-center
-                gap-3
-              "
-            >
-              <img
-                :src="
-                  review.customerPhoto &&
-                  review.customerPhoto.startsWith('http')
-                    ? review.customerPhoto
-                    : 'https://i.pravatar.cc/150'
-                "
-                class="
-                  w-12
-                  h-12
-                  rounded-full
-                  object-cover
-                "
-              />
-
-              <div>
-                <h3
-                  class="
-                    font-semibold
-                    text-slate-900
-                    text-sm
-                  "
-                >
-                  {{ review.customerName }}
-                </h3>
-
-                <div
-                  class="
-                    flex
-                    items-center
-                    gap-1
-                    text-yellow-500
-                    text-sm
-                    mt-1
-                  "
-                >
-                  <span
-                    v-for="i in review.rating"
-                    :key="i"
-                  >
-                    ★
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+            :review="review"
+          />
         </div>
 
-        <!-- Button -->
-        <div class="text-center mt-12">
-          <NuxtLink
-            to="/reviews"
-            class="
-              inline-flex
-              items-center
-              gap-2
-              bg-blue-600
-              text-white
-              px-7
-              py-3
-              rounded-2xl
-              shadow-lg
-              hover:bg-blue-700
-              transition
-            "
-          >
-            Lihat Semua Review
-          </NuxtLink>
+        <!-- Button --> 
+        <div class="text-center mt-12"> 
+          <NuxtLink 
+          to="/reviews" 
+          class=" 
+          inline-flex 
+          items-center 
+          gap-2 
+          bg-blue-600 
+          text-white 
+          px-7 
+          py-3 
+          rounded-2xl 
+          shadow-lg 
+          hover:bg-blue-700 
+          transition 
+          " 
+          > 
+          Lihat Semua Review 
+          </NuxtLink> 
         </div>
-
       </div>
     </section>
 

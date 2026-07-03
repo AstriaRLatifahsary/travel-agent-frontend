@@ -8,31 +8,48 @@ import {
 
 import Swal from 'sweetalert2'
 
+import type {
+  Banner,
+} from '~/types/banner'
+
+import type {
+  TravelPackage,
+} from '~/types/travel-package'
+
 definePageMeta({
   middleware: ['auth'],
   layout: 'admin',
 })
 
-const { data: packages } = await useFetch(
+const {
+  data: packages,
+} = await useFetch<
+  TravelPackage[]
+>(
   'http://localhost:3333/admin/travel-packages'
 )
 
 const {
   data: banners,
   refresh,
-} = await useFetch(
+} = await useFetch<
+  Banner[]
+>(
   'http://localhost:3333/admin/banners'
 )
 
 const showForm = ref(false)
-const editingId = ref<number | null>(null)
+const editingId = ref<number | null>(
+  null
+)
 
 const form = reactive({
   title: '',
   subtitle: '',
   image: '',
   description: '',
-  travelPackageId: '',
+  travelPackageId:
+    null as number | null,
 })
 
 function resetForm() {
@@ -40,7 +57,7 @@ function resetForm() {
   form.subtitle = ''
   form.image = ''
   form.description = ''
-  form.travelPackageId = ''
+  form.travelPackageId = null
 
   editingId.value = null
 }
@@ -50,44 +67,53 @@ function openCreate() {
   showForm.value = true
 }
 
-function openEdit(banner: any) {
+function openEdit(
+  banner: Banner
+) {
   editingId.value = banner.id
 
   form.title = banner.title
-  form.subtitle = banner.subtitle
-  form.image = banner.image
-  form.description = banner.description
+  form.subtitle =
+    banner.subtitle ?? ''
+
+  form.image =
+    banner.image ?? ''
+
+  form.description =
+    banner.description ?? ''
+
   form.travelPackageId =
-    banner.travelPackageId ?? ''
+    banner.travelPackageId
 
   showForm.value = true
 }
 
 async function saveBanner() {
   if (!form.travelPackageId) {
-  await Swal.fire({
-    icon: 'warning',
-    title: 'Pilih Paket',
-    text: 'Silakan pilih paket tujuan terlebih dahulu.',
-    confirmButtonColor: '#2563eb',
-  })
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Pilih Paket',
+      text:
+        'Silakan pilih paket tujuan terlebih dahulu.',
+      confirmButtonColor:
+        '#2563eb',
+    })
 
-  return
-} 
+    return
+  }
 
   const payload = {
     title: form.title,
     subtitle: form.subtitle,
     image: form.image,
-    description: form.description,
-    travel_package_id: Number(
-      form.travelPackageId
-    ),
+    description:
+      form.description,
+    travel_package_id:
+      form.travelPackageId,
   }
 
   try {
     if (editingId.value) {
-      console.log(payload)
       await $fetch(
         `http://localhost:3333/admin/banners/${editingId.value}`,
         {
@@ -106,15 +132,36 @@ async function saveBanner() {
     }
 
     showForm.value = false
+
     resetForm()
-    refresh()
+
+    await refresh()
+
+    await Swal.fire({
+      icon: 'success',
+      title: 'Berhasil',
+      text:
+        'Banner berhasil disimpan.',
+      confirmButtonColor:
+        '#2563eb',
+    })
   } catch (error) {
     console.error(error)
-    alert('Gagal menyimpan data')
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Gagal',
+      text:
+        'Gagal menyimpan banner.',
+      confirmButtonColor:
+        '#2563eb',
+    })
   }
 }
 
-async function deleteBanner(id: number) {
+async function deleteBanner(
+  id: number
+) {
   const result =
     await Swal.fire({
       title: 'Hapus Banner?',
@@ -122,9 +169,12 @@ async function deleteBanner(id: number) {
         'Data yang dihapus tidak dapat dikembalikan.',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Hapus',
-      cancelButtonText: 'Batal',
-      confirmButtonColor: '#ef4444',
+      confirmButtonText:
+        'Hapus',
+      cancelButtonText:
+        'Batal',
+      confirmButtonColor:
+        '#ef4444',
     })
 
   if (!result.isConfirmed)
@@ -138,13 +188,15 @@ async function deleteBanner(id: number) {
       }
     )
 
-    refresh()
+    await refresh()
 
-    Swal.fire({
+    await Swal.fire({
       icon: 'success',
       title: 'Berhasil',
-      text: 'Banner berhasil dihapus.',
-      confirmButtonColor: '#2563eb',
+      text:
+        'Banner berhasil dihapus.',
+      confirmButtonColor:
+        '#2563eb',
     })
   } catch (error) {
     console.error(error)
@@ -152,7 +204,10 @@ async function deleteBanner(id: number) {
     Swal.fire({
       icon: 'error',
       title: 'Gagal',
-      text: 'Gagal menghapus banner.',
+      text:
+        'Gagal menghapus banner.',
+      confirmButtonColor:
+        '#2563eb',
     })
   }
 }

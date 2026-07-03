@@ -8,29 +8,43 @@ import {
   Star,
 } from 'lucide-vue-next'
 
+import type {
+  TravelPackage,
+} from '~/types/travel-package'
+
+import type {
+  Review,
+} from '~/types/review'
+
 const route = useRoute()
 
-const { data: pkg } =
-  await useFetch(
-    `http://localhost:3333/admin/travel-packages/${route.params.id}`
-  )
+const {
+  data: pkg,
+} = await useFetch<TravelPackage>(
+  `http://localhost:3333/admin/travel-packages/${route.params.id}`
+)
 
-const { data: reviews } =
-  await useFetch(
-    'http://localhost:3333/admin/reviews'
-  )
+const {
+  data: reviews,
+} = await useFetch<Review[]>(
+  'http://localhost:3333/admin/reviews'
+)
 
 const packageReviews = computed(() => {
-  if (!reviews.value || !pkg.value)
+  if (!reviews.value || !pkg.value) {
     return []
+  }
 
   return reviews.value.filter(
-    (r: any) =>
-      r.travelPackageId === pkg.value.id
+    (review) =>
+      review.travelPackageId ===
+      pkg.value!.id
   )
 })
 
 const orderPackage = () => {
+  if (!pkg.value) return
+
   window.open(
     `https://wa.me/6281234567890?text=Saya tertarik dengan ${pkg.value.title}`,
     '_blank'
@@ -78,6 +92,7 @@ const orderPackage = () => {
       <div>
         <img
           :src="pkg.image"
+          loading="lazy"
           class="
             w-full
             h-[220px]
