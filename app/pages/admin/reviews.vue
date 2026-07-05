@@ -49,7 +49,6 @@ const form = reactive({
     null as number | null,
 
   customerName: '',
-  customerPhoto: '',
   comment: '',
   rating:
     null as number | null,
@@ -58,7 +57,6 @@ const form = reactive({
 function resetForm() {
   form.travelPackageId = null
   form.customerName = ''
-  form.customerPhoto = ''
   form.comment = ''
   form.rating = null
 
@@ -80,9 +78,6 @@ function openEdit(
 
   form.customerName =
     review.customerName ?? ''
-
-  form.customerPhoto =
-    review.customerPhoto ?? ''
 
   form.comment =
     review.comment ?? ''
@@ -149,12 +144,13 @@ async function saveReview() {
     customer_name:
       form.customerName,
 
-    customer_photo:
-      form.customerPhoto,
+    customer_photo: null,
 
-    comment: form.comment,
+    comment:
+      form.comment,
 
-    rating: form.rating,
+    rating:
+      form.rating,
   }
 
   try {
@@ -222,8 +218,9 @@ async function deleteReview(
         '#ef4444',
     })
 
-  if (!result.isConfirmed)
+  if (!result.isConfirmed) {
     return
+  }
 
   try {
     await $fetch(
@@ -477,17 +474,6 @@ async function deleteReview(
               "
             />
 
-            <input
-              v-model="form.customerPhoto"
-              placeholder="Photo URL"
-              class="
-                border
-                p-3
-                w-full
-                rounded-xl
-              "
-            />
-
             <textarea
               v-model="form.comment"
               rows="3"
@@ -605,11 +591,7 @@ async function deleteReview(
                 "
               >
                 <img
-                  :src="
-                    review.customerPhoto?.trim()
-                      ? review.customerPhoto
-                      : 'https://i.pravatar.cc/100'
-                  "
+                :src="`https://ui-avatars.com/api/?name=${review.customerName}&background=2563eb&color=ffffff`"
                   class="
                     w-10
                     h-10

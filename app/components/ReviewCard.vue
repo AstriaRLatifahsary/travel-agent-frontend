@@ -58,10 +58,8 @@ defineProps<{
     >
       <img
         :src="
-          review.customerPhoto &&
-          review.customerPhoto.startsWith('http')
-            ? review.customerPhoto
-            : 'https://i.pravatar.cc/150'
+          review.customerPhoto ||
+          `https://ui-avatars.com/api/?name=${review.customerName}&background=2563eb&color=ffffff`
         "
         loading="lazy"
         class="

@@ -21,6 +21,19 @@ definePageMeta({
   layout: 'admin',
 })
 
+const imageFile =
+  ref<File | null>(null)
+
+function handleImage(
+  event: Event
+) {
+  const target =
+    event.target as HTMLInputElement
+
+  imageFile.value =
+    target.files?.[0] ?? null
+}
+
 const {
   data: packages,
 } = await useFetch<
@@ -39,14 +52,14 @@ const {
 )
 
 const showForm = ref(false)
-const editingId = ref<number | null>(
-  null
-)
+
+const editingId = ref<
+  number | null
+>(null)
 
 const form = reactive({
   title: '',
   subtitle: '',
-  image: '',
   description: '',
   travelPackageId:
     null as number | null,
@@ -55,10 +68,10 @@ const form = reactive({
 function resetForm() {
   form.title = ''
   form.subtitle = ''
-  form.image = ''
   form.description = ''
   form.travelPackageId = null
 
+  imageFile.value = null
   editingId.value = null
 }
 
@@ -73,11 +86,9 @@ function openEdit(
   editingId.value = banner.id
 
   form.title = banner.title
+
   form.subtitle =
     banner.subtitle ?? ''
-
-  form.image =
-    banner.image ?? ''
 
   form.description =
     banner.description ?? ''
@@ -85,16 +96,22 @@ function openEdit(
   form.travelPackageId =
     banner.travelPackageId
 
+  imageFile.value = null
+
   showForm.value = true
 }
 
 async function saveBanner() {
-  if (!form.travelPackageId) {
+  if (
+    !form.title ||
+    !form.travelPackageId
+  ) {
     await Swal.fire({
       icon: 'warning',
-      title: 'Pilih Paket',
+      title:
+        'Data Belum Lengkap',
       text:
-        'Silakan pilih paket tujuan terlebih dahulu.',
+        'Silakan lengkapi data banner.',
       confirmButtonColor:
         '#2563eb',
     })
@@ -102,14 +119,53 @@ async function saveBanner() {
     return
   }
 
-  const payload = {
-    title: form.title,
-    subtitle: form.subtitle,
-    image: form.image,
-    description:
-      form.description,
-    travel_package_id:
-      form.travelPackageId,
+  if (
+    !editingId.value &&
+    !imageFile.value
+  ) {
+    await Swal.fire({
+      icon: 'warning',
+      title:
+        'Pilih Gambar',
+      text:
+        'Silakan pilih gambar banner.',
+      confirmButtonColor:
+        '#2563eb',
+    })
+
+    return
+  }
+
+  const formData =
+    new FormData()
+
+  formData.append(
+    'title',
+    form.title
+  )
+
+  formData.append(
+    'subtitle',
+    form.subtitle
+  )
+
+  formData.append(
+    'description',
+    form.description
+  )
+
+  formData.append(
+    'travel_package_id',
+    String(
+      form.travelPackageId
+    )
+  )
+
+  if (imageFile.value) {
+    formData.append(
+      'image',
+      imageFile.value
+    )
   }
 
   try {
@@ -118,7 +174,7 @@ async function saveBanner() {
         `http://localhost:3333/admin/banners/${editingId.value}`,
         {
           method: 'PUT',
-          body: payload,
+          body: formData,
         }
       )
     } else {
@@ -126,7 +182,7 @@ async function saveBanner() {
         'http://localhost:3333/admin/banners',
         {
           method: 'POST',
-          body: payload,
+          body: formData,
         }
       )
     }
@@ -148,7 +204,7 @@ async function saveBanner() {
   } catch (error) {
     console.error(error)
 
-    Swal.fire({
+    await Swal.fire({
       icon: 'error',
       title: 'Gagal',
       text:
@@ -177,8 +233,9 @@ async function deleteBanner(
         '#ef4444',
     })
 
-  if (!result.isConfirmed)
+  if (!result.isConfirmed) {
     return
+  }
 
   try {
     await $fetch(
@@ -201,7 +258,7 @@ async function deleteBanner(
   } catch (error) {
     console.error(error)
 
-    Swal.fire({
+    await Swal.fire({
       icon: 'error',
       title: 'Gagal',
       text:
@@ -423,8 +480,9 @@ async function deleteBanner(
             />
 
             <input
-              v-model="form.image"
-              placeholder="Masukkan URL gambar banner"
+              type="file"
+              accept="image/*"
+              @change="handleImage"
               class="
                 w-full
                 border
@@ -535,10 +593,6 @@ async function deleteBanner(
             </th>
 
             <th class="p-5 text-left">
-              Image
-            </th>
-
-            <th class="p-5 text-left">
               Action
             </th>
           </tr>
@@ -566,21 +620,6 @@ async function deleteBanner(
                     banner.travelPackageId
                 )?.title || '-'
               }}
-            </td>
-
-            <td class="p-5">
-              <img
-                :src="
-                  banner.image ||
-                  'https://placehold.co/120x70'
-                "
-                class="
-                  w-28
-                  h-16
-                  object-cover
-                  rounded-xl
-                "
-              />
             </td>
 
             <td class="p-5">

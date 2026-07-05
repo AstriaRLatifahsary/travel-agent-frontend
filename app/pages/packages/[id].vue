@@ -91,7 +91,11 @@ const orderPackage = () => {
       <!-- LEFT -->
       <div>
         <img
-          :src="pkg.image"
+          :src="
+            pkg.image?.startsWith('http')
+              ? pkg.image
+              : `http://localhost:3333/${pkg.image}`
+          "
           loading="lazy"
           class="
             w-full

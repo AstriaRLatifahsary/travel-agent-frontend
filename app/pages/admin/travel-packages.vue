@@ -17,6 +17,19 @@ definePageMeta({
   layout: 'admin',
 })
 
+const imageFile =
+  ref<File | null>(null)
+
+function handleImage(
+  event: Event
+) {
+  const target =
+    event.target as HTMLInputElement
+
+  imageFile.value =
+    target.files?.[0] ?? null
+}
+
 const {
   data: packages,
   refresh,
@@ -40,7 +53,6 @@ const form = reactive({
   duration: '',
   quota: '',
   facilities: '',
-  image: '',
 })
 
 function resetForm() {
@@ -51,8 +63,8 @@ function resetForm() {
   form.duration = ''
   form.quota = ''
   form.facilities = ''
-  form.image = ''
 
+  imageFile.value = null
   editingId.value = null
 }
 
@@ -87,8 +99,7 @@ function openEdit(
   form.facilities =
     pkg.facilities ?? ''
 
-  form.image =
-    pkg.image ?? ''
+  imageFile.value = null
 
   showForm.value = true
 }
@@ -101,8 +112,7 @@ async function savePackage() {
     !form.price ||
     !form.duration ||
     !form.quota ||
-    !form.facilities ||
-    !form.image
+    !form.facilities
   ) {
     await Swal.fire({
       icon: 'warning',
@@ -117,23 +127,49 @@ async function savePackage() {
     return
   }
 
-  const payload = {
-    title: form.title,
-    destination:
-      form.destination,
-    description:
-      form.description,
-    price: Number(
-      form.price
-    ),
-    duration:
-      form.duration,
-    quota: Number(
-      form.quota
-    ),
-    facilities:
-      form.facilities,
-    image: form.image,
+  const formData =
+    new FormData()
+
+  formData.append(
+    'title',
+    form.title
+  )
+
+  formData.append(
+    'destination',
+    form.destination
+  )
+
+  formData.append(
+    'description',
+    form.description
+  )
+
+  formData.append(
+    'price',
+    form.price
+  )
+
+  formData.append(
+    'duration',
+    form.duration
+  )
+
+  formData.append(
+    'quota',
+    form.quota
+  )
+
+  formData.append(
+    'facilities',
+    form.facilities
+  )
+
+  if (imageFile.value) {
+    formData.append(
+      'image',
+      imageFile.value
+    )
   }
 
   try {
@@ -142,15 +178,29 @@ async function savePackage() {
         `http://localhost:3333/admin/travel-packages/${editingId.value}`,
         {
           method: 'PUT',
-          body: payload,
+          body: formData,
         }
       )
     } else {
+      if (!imageFile.value) {
+        await Swal.fire({
+          icon: 'warning',
+          title:
+            'Pilih Gambar',
+          text:
+            'Silakan pilih gambar paket.',
+          confirmButtonColor:
+            '#2563eb',
+        })
+
+        return
+      }
+
       await $fetch(
         'http://localhost:3333/admin/travel-packages',
         {
           method: 'POST',
-          body: payload,
+          body: formData,
         }
       )
     }
@@ -469,8 +519,9 @@ async function deletePackage(
             />
 
             <input
-              v-model="form.image"
-              placeholder="Image URL"
+              type="file"
+              accept="image/*"
+              @change="handleImage"
               class="border p-3 w-full rounded-xl"
             />
 

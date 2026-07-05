@@ -135,10 +135,7 @@ const {
           >
             <img
               :src="
-                review.customerPhoto &&
-                review.customerPhoto.startsWith('http')
-                  ? review.customerPhoto
-                  : 'https://i.pravatar.cc/150?img=' + review.id
+                `https://ui-avatars.com/api/?name=${review.customerName}&background=2563eb&color=ffffff`
               "
               class="
                 w-14

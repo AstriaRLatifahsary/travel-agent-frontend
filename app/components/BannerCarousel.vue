@@ -69,8 +69,9 @@ function goToBanner(
         <!-- IMAGE -->
         <img
           :src="
-            banner.image ||
-            'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429'
+            banner.image?.startsWith('http')
+              ? banner.image
+              : `http://localhost:3333/${banner.image}`
           "
           class="
             absolute
